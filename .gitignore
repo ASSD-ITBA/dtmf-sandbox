@@ -1,0 +1,12 @@
+# scratch pages used to drive the app in a headless browser while testing
+_*.html
+_*.js
+
+# detector.py imported by a test bench
+__pycache__/
+
+# OS / editor noise
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/

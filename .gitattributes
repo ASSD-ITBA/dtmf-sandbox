@@ -1,0 +1,7 @@
+# The vendored Python runtime must stay byte-exact. Git detects binaries on
+# its own, but core.autocrlf is on for this machine and a line-ending
+# conversion here would corrupt the wasm and Pyodide would fail to load.
+*.wasm binary
+*.whl  binary
+*.zip  binary
+*.png  binary

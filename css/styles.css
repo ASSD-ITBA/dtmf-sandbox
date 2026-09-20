@@ -1,0 +1,660 @@
+/* ═══════════════════════════════════════════════════════════
+   DTMF sandbox — dark theme
+
+   The palette, the starfield and the component idioms are the
+   Audio FX sandbox's, which this app shares a Python worker and
+   an editor with. Two pages from one course should not look
+   like two different pieces of software.
+
+   Sections, top to bottom: tokens · header · banner · layout ·
+   panel · buttons · params · code · console · keypad ·
+   scrollbars · narrow
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #070b14;
+  --panel: rgba(16, 22, 36, 0.86);
+  --panel-solid: #101624;
+  --panel-2: #0c1220;
+  --border: #22304a;
+  --border-soft: #1a2436;
+
+  --text: #dbe4f2;
+  --text-dim: #7e8ca6;
+  --text-faint: #55627a;
+
+  --accent: #4fc3f7;
+  --accent-dim: #2d7fa5;
+  --out: #ffb454;
+  --err: #ff6b6b;
+  --ok: #7bd88f;
+
+  --mono: "JetBrains Mono", "Cascadia Mono", "Consolas", ui-monospace, monospace;
+  --sans: "Inter", "Segoe UI", system-ui, sans-serif;
+
+  --r: 6px;
+}
+
+* { box-sizing: border-box; }
+
+/* Any class that sets `display` outranks the UA rule for [hidden], and then
+   el.hidden = true silently does nothing. */
+[hidden] { display: none !important; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text);
+  background-color: var(--bg);
+  background-image: url("../assets/background.png");
+  background-size: 512px 512px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* darken the starfield so it stays a texture, not a distraction */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(20, 40, 70, 0.35), rgba(5, 8, 14, 0.9) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─────────── header ─────────── */
+
+#app-header {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px;
+  background: rgba(8, 12, 20, 0.85);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(6px);
+}
+
+#app-header .logo { height: 26px; image-rendering: pixelated; opacity: 0.9; }
+
+.title-block { margin-right: auto; }
+
+.title-block h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.title-block .subtitle { margin: 1px 0 0; font-size: 11px; color: var(--text-faint); }
+
+.run-state,
+.py-badge {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 9px;
+  border-radius: 10px;
+  color: var(--text-dim);
+  background: rgba(79, 195, 247, 0.08);
+  border: 1px solid var(--border);
+}
+
+.run-state.on {
+  color: #10060a;
+  background: var(--ok);
+  border-color: var(--ok);
+  font-weight: 600;
+}
+
+.py-badge.ready { color: var(--ok); border-color: #2c5c3a; background: rgba(123, 216, 143, 0.08); }
+.py-badge.busy  { color: var(--out); border-color: #6b4d1f; background: rgba(255, 180, 84, 0.08); }
+.py-badge.err   { color: var(--err); border-color: #6b2b2b; background: rgba(255, 107, 107, 0.08); }
+
+kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text-dim);
+  background: #0a0f1a;
+  border: 1px solid var(--border);
+}
+
+/* ─────────── blocking-problem banner ─────────── */
+
+#app-banner {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  padding: 11px 18px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ffc9c9;
+  background: rgba(255, 107, 107, 0.09);
+  border-bottom: 1px solid #6b2b2b;
+}
+
+#app-banner strong { color: var(--err); font-weight: 600; }
+
+#app-banner code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: #ffe0e0;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #6b2b2b;
+}
+
+/* ─────────── layout ─────────── */
+
+#app-main {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  padding: 16px;
+}
+
+#editor-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#pad-col {
+  flex: 0 0 400px;
+  min-width: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* centred when it fits; `safe` keeps the top reachable when it does not */
+  justify-content: safe center;
+  padding: 2px 4px 10px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+
+.panel-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.panel-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+/* ─────────── buttons ─────────── */
+
+.btn {
+  font-family: inherit;
+  font-size: 11.5px;
+  padding: 5px 12px;
+  color: var(--text);
+  background: #162033;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+
+.btn:hover:not(:disabled) { background: #1d2a42; border-color: var(--accent-dim); }
+
+.btn.primary {
+  color: #06121c;
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.btn.primary:hover:not(:disabled) { background: #6fd0fa; }
+
+.btn.stop {
+  color: #10060a;
+  background: var(--err);
+  border-color: var(--err);
+  font-weight: 600;
+}
+.btn.stop:hover:not(:disabled) { background: #ff8585; }
+
+.btn.ghost { background: transparent; color: var(--text-dim); }
+.btn.ghost:hover:not(:disabled) { background: rgba(79, 195, 247, 0.07); color: var(--text); }
+
+.btn.tiny { font-size: 10.5px; padding: 3px 8px; }
+
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─────────── the parameter strip ─────────── */
+
+/* What the app owns, said once, above the code that is told the same thing. */
+.params {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+  background: rgba(6, 10, 18, 0.55);
+  border-bottom: 1px solid var(--border-soft);
+  overflow-wrap: anywhere;
+}
+
+/* ─────────── the code ─────────── */
+
+.code-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  margin: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #212121;          /* material-darker carries its own background */
+}
+
+/* read-only while a pass is running: the code on screen is no longer the code
+   that is decoding, and the border says so */
+.code-shell.readonly { border-color: var(--accent-dim); opacity: 0.85; }
+
+#code-body { flex: 1 1 auto; min-width: 0; min-height: 0; }
+
+.CodeMirror {
+  height: 100%;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.CodeMirror .CodeMirror-gutters { border: none; }
+
+/* plain-textarea fallback when the CDN is unreachable too */
+textarea.fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #eee;
+  background: #212121;
+  border: none;
+  outline: none;
+  resize: none;
+  tab-size: 4;
+}
+
+/* ─────────── console ─────────── */
+
+.console {
+  flex: 0 0 auto;
+  margin: 0 12px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  background: #080d16;
+  overflow: hidden;
+}
+
+.console-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.console-head .stat {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-dim);
+}
+.console-head .stat.hot { color: var(--err); }
+
+#console-out {
+  margin: 0;
+  padding: 7px 10px;
+  height: 116px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+#console-out .l-err { color: var(--err); }
+#console-out .l-ok  { color: var(--ok); }
+#console-out .l-sys { color: var(--accent-dim); }
+
+/* ═══════════════ the keypad ═══════════════
+
+   A panel like the one the code sits in: the number that has been dialled,
+   the pad with its frequency margins printed round it, and the two controls
+   a real line actually varies. The keys keep their travel — a key that does
+   not move under the pointer does not read as a key — and they take the
+   accent when they go down, the way the piano keys do next door. */
+
+#pad-panel {
+  width: 100%;
+  max-width: 376px;
+}
+
+/* ── what has been dialled ── */
+
+.dialled {
+  flex: 0 0 auto;
+  margin: 10px 12px 0;
+  padding: 6px 10px 8px;
+  border-radius: 4px;
+  background: #080d16;
+  border: 1px solid var(--border-soft);
+}
+
+.dialled-label {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.received {
+  /* exactly two lines of 20px at 1.35 — a long number scrolls, and it never
+     scrolls to a half-cut row of digits */
+  height: 54px;
+  margin-top: 3px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 20px;
+  line-height: 1.35;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  word-break: break-all;
+  cursor: pointer;
+}
+
+.received:empty::before {
+  content: "— — — —";
+  font-size: 15px;
+  letter-spacing: 0.3em;
+  color: var(--text-faint);
+}
+
+.received .ch { animation: land .18s ease-out; }
+
+@keyframes land {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* the two small readouts: what the gate is holding, and what the line is
+   sending right now */
+.note {
+  flex: 0 0 auto;
+  margin: 7px 12px 0;
+  padding: 4px 7px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-align: center;
+  color: var(--text-dim);
+  background: #080d16;
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+
+/* ── the pad ── */
+
+.well {
+  flex: 0 0 auto;
+  margin: 10px 12px 0;
+  padding: 9px 10px 10px;
+  border-radius: 4px;
+  background: #05080f;
+  border: 1px solid var(--border-soft);
+}
+
+#keypad { margin: 0; }
+
+/* the frequency margins are printed around the keys, the way a service legend
+   is: a key *is* its row tone and its column tone, and here you can read both */
+.pad {
+  display: grid;
+  grid-template-columns: auto repeat(var(--cols, 3), minmax(0, 1fr));
+  gap: 6px;
+  align-items: stretch;
+}
+
+.pad-corner,
+.pad-freq {
+  display: flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.pad-corner { justify-content: flex-end; align-self: end; padding: 0 5px 3px 0; opacity: 0.7; }
+.pad-freq.col { justify-content: center; padding-bottom: 3px; }
+.pad-freq.row { justify-content: flex-end; padding-right: 5px; }
+
+.key {
+  position: relative;
+  aspect-ratio: 1 / 0.82;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-family: var(--sans);
+  color: var(--text);
+  background: linear-gradient(#2a3448, #141b29);
+  border: 1px solid #05080f;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;           /* a finger on a key must not scroll the page */
+  box-shadow:
+    0 3px 0 #090e18,
+    0 4px 6px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  transition: background .06s, box-shadow .06s, transform .06s;
+}
+
+.key:hover { background: linear-gradient(#354162, #1a2233); }
+
+.key .glyph { font-size: 22px; font-weight: 600; line-height: 1; }
+
+/* the asterisk sits at cap height in every font there is; on a phone it is
+   printed in the middle of the key */
+.key[data-key="*"] .glyph { transform: translateY(0.2em); }
+
+.key .sub {
+  font-family: var(--sans);
+  font-size: 7.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+  min-height: 9px;
+}
+
+/* the lamp: what the detector says it hears, which need not be what is
+   being pressed — that difference is the point of it */
+.key .led {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1b2536;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+.key.got .led {
+  background: var(--ok);
+  box-shadow: 0 0 6px 1px rgba(123, 216, 143, 0.75);
+}
+
+/* pressed: the key goes down and the shadow under it goes away */
+.key.on {
+  color: #eaf6ff;
+  background: linear-gradient(#63b0d4, #2b7396);
+  transform: translateY(3px);
+  box-shadow: 0 0 0 #090e18, inset 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+.key.on .sub { color: #cbe8f8; }
+
+/* ── the two controls under the pad ── */
+
+.plate {
+  flex: 0 0 auto;
+  margin: 10px 12px 12px;
+  padding: 9px 11px;
+  border-radius: 4px;
+  background: rgba(10, 15, 26, 0.5);
+  border: 1px solid var(--border-soft);
+}
+
+.slider-row {
+  display: grid;
+  grid-template-columns: 42px 1fr 54px;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 7px;
+}
+
+.slider-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.slider-value {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-align: right;
+  color: var(--accent);
+}
+
+input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.plate-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* mute, as the two-position switch it would be on a desk set */
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.switch-row input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.slide {
+  position: relative;
+  width: 32px;
+  height: 15px;
+  border-radius: 8px;
+  background: #0a0f1a;
+  border: 1px solid var(--border);
+  transition: background .15s, border-color .15s;
+}
+
+.slide::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 11px;
+  border-radius: 4px;
+  background: #3a4661;
+  transition: transform .15s, background .15s;
+}
+
+.switch-row input:checked + .slide { background: rgba(79, 195, 247, 0.22); border-color: var(--accent-dim); }
+.switch-row input:checked + .slide::after { transform: translateX(15px); background: var(--accent); }
+.switch-row input:focus-visible + .slide { outline: 2px solid var(--accent-dim); outline-offset: 2px; }
+
+/* ─────────── scrollbars ─────────── */
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1f2b41; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #2b3b58; }
+
+/* ─────────── narrow ─────────── */
+
+@media (max-width: 1080px) {
+  #app-main { flex-direction: column; overflow-y: auto; }
+  #editor-panel { min-height: 58vh; }
+  #pad-col { flex: 0 0 auto; overflow: visible; }
+}

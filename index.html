@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DTMF sandbox</title>
+
+  <link rel="icon" type="image/svg+xml" href="assets/acorn.svg?v=5">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/acorn-32.png?v=5">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/acorn-64.png?v=5">
+  <link rel="apple-touch-icon" href="assets/acorn-64.png?v=5">
+
+  <!-- CodeMirror 5 and material-darker, vendored -->
+  <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
+  <link rel="stylesheet" href="vendor/codemirror/material-darker.css">
+  <link rel="stylesheet" href="css/styles.css?v=5">
+</head>
+
+<body>
+
+  <header id="app-header">
+    <img src="assets/logo_itba_pxl.png" alt="ITBA" class="logo">
+    <div class="title-block">
+      <h1>DTMF sandbox</h1>
+      <p class="subtitle">Dial on the keypad, decode it in Python</p>
+    </div>
+    <span class="run-state" id="run-state">idle</span>
+    <span class="py-badge" id="py-badge">booting&hellip;</span>
+  </header>
+
+  <div id="app-banner" hidden></div>
+
+  <main id="app-main">
+
+    <!-- ══════════════════ THE CODE ══════════════════ -->
+    <section class="panel" id="editor-panel">
+      <div class="panel-head">
+        <h2>The detector</h2>
+        <div class="panel-actions">
+          <button class="btn ghost" id="btn-reset-code"
+                  title="Put the detector the app ships with back">Reset</button>
+          <button class="btn primary" id="btn-run">Run &#9656;</button>
+          <button class="btn stop" id="btn-stop" hidden>Stop &#9632;</button>
+        </div>
+      </div>
+
+      <div class="params" id="params-strip">&mdash;</div>
+
+      <div class="code-shell" id="code-shell">
+        <div id="code-body"></div>
+      </div>
+
+      <div class="console">
+        <div class="console-head">
+          <span>Console</span>
+          <span class="stat" id="stat-run">not run yet</span>
+          <button class="btn ghost tiny" id="btn-clear-console">clear</button>
+        </div>
+        <pre id="console-out"></pre>
+      </div>
+    </section>
+
+    <!-- ══════════════════ THE KEYPAD ══════════════════
+         The pad, the number it has dialled, and the two things a real line
+         varies. Nothing around it: the keys are the instrument. -->
+    <aside id="pad-col">
+      <section class="panel" id="pad-panel">
+
+        <div class="panel-head">
+          <h2>The keypad</h2>
+        </div>
+
+        <div class="dialled">
+          <span class="dialled-label">Dialled</span>
+          <div class="received" id="received"></div>
+        </div>
+
+        <div class="note" id="block-readout">not decoding</div>
+
+        <div class="well">
+          <div id="keypad"></div>
+        </div>
+
+        <div class="note" id="key-readout">&mdash;</div>
+
+        <div class="plate">
+          <label class="slider-row">
+            <span class="slider-label">Noise</span>
+            <input type="range" id="noise" min="0" max="0.3" step="0.005" value="0">
+            <span class="slider-value" id="noise-value">0.000</span>
+          </label>
+
+          <label class="slider-row">
+            <span class="slider-label">Twist</span>
+            <input type="range" id="twist" min="-12" max="12" step="0.5" value="0">
+            <span class="slider-value" id="twist-value">0.0 dB</span>
+          </label>
+
+          <div class="plate-foot">
+            <label class="switch-row" title="The tones still reach your function">
+              <input type="checkbox" id="mute">
+              <span class="slide" aria-hidden="true"></span>
+              <span>Mute</span>
+            </label>
+          </div>
+        </div>
+
+      </section>
+    </aside>
+
+  </main>
+
+  <!-- CodeMirror, vendored -->
+  <script src="vendor/codemirror/codemirror.js"></script>
+  <script src="vendor/codemirror/python.js"></script>
+  <script src="vendor/codemirror/matchbrackets.js"></script>
+  <script src="vendor/codemirror/active-line.js"></script>
+
+  <!-- …with the CDN as a safety net if vendor/ was not copied along -->
+  <script>
+    if (!window.CodeMirror || !CodeMirror.modes.python) {
+      var CM = 'https://cdn.jsdelivr.net/npm/codemirror@5.65.21/';
+      ['lib/codemirror.css', 'theme/material-darker.css'].forEach(function (p) {
+        document.write('<link rel="stylesheet" href="' + CM + p + '">');
+      });
+      ['lib/codemirror.js', 'mode/python/python.js',
+       'addon/edit/matchbrackets.js', 'addon/selection/active-line.js'].forEach(function (p) {
+        document.write('<scr' + 'ipt src="' + CM + p + '"><\/scr' + 'ipt>');
+      });
+    }
+  </script>
+
+  <!-- App -->
+  <script src="js/dtmf.js?v=5"></script>
+  <!-- the worked detector; the page uses it only with ?solution=1 -->
+  <script src="js/solution.js?v=5"></script>
+  <script src="js/editor.js?v=5"></script>
+  <script src="js/pyrunner.js?v=5"></script>
+  <script src="js/audio.js?v=5"></script>
+  <script src="js/keypad.js?v=5"></script>
+  <script src="js/app.js?v=5"></script>
+</body>
+
+</html>
