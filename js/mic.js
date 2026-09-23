@@ -15,7 +15,12 @@
 
 const MicIO = (() => {
 
-  const WORKLET_URL = 'js/capture-worklet.js?v=1';
+  /* Fetched by URL, so it carries its own cache-buster — and one that must
+     never drift from the page's, or a browser holding yesterday's copy runs
+     it against today's app. This takes it from this file's own script tag,
+     so bumping ?v= in index.html moves everything the page pulls in. */
+  const V = document.currentScript ? new URL(document.currentScript.src).search : '';
+  const WORKLET_URL = `js/capture-worklet.js${V}`;
   const CHUNK = 1024;          // ScriptProcessor block, fallback path only
 
   let ctx = null, stream = null, src = null, sink = null;

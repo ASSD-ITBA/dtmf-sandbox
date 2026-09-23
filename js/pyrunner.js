@@ -9,7 +9,12 @@
 
 const PyRunner = (() => {
 
-  const WORKER_URL = 'js/pyworker.js?v=3';
+  /* Fetched by URL, so it carries its own cache-buster — and one that must
+     never drift from the page's, or a browser holding yesterday's copy runs
+     it against today's app. This takes it from this file's own script tag,
+     so bumping ?v= in index.html moves everything the page pulls in. */
+  const V = document.currentScript ? new URL(document.currentScript.src).search : '';
+  const WORKER_URL = `js/pyworker.js${V}`;
 
   let worker = null;
   let ready = false;
