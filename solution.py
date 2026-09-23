@@ -60,34 +60,40 @@ TWIST = 10.0      # widest power ratio between the two tones — about 10 dB,
 def process_block(x, fs, buf_size):
     """One block of the line in, one character out — or None."""
     power = float(np.mean(x * x))
-    if power < QUIET:
-        return None                      # nothing on the line
 
     # a Python loop over a numpy array pays for a boxed float a step
     samples = x.tolist()
     rows = [tone_power(samples, f, fs) for f in ROW_HZ]
     cols = [tone_power(samples, f, fs) for f in COL_HZ]
+    stems = rows + cols
+
+    # The quiet gate used to return before measuring anything, which is the
+    # cheaper order. It measures first now so that the app's Spectrum panel
+    # has something to draw between digits — and a block that is below the
+    # gate is a block with time to spare.
+    if power < QUIET:
+        return None, stems               # nothing on the line
 
     r = max(range(4), key=lambda i: rows[i])
     c = max(range(4), key=lambda i: cols[i])
 
     # one tone per group, each well clear of the other three
     if runner_up(rows, r) * RATIO > rows[r]:
-        return None
+        return None, stems
     if runner_up(cols, c) * RATIO > cols[c]:
-        return None
+        return None, stems
 
     # the pair has to be most of what is in the block, or it is noise that
     # happens to lean one way
     if rows[r] + cols[c] < PURITY * power:
-        return None
+        return None, stems
 
     # and neither tone may swamp the other: that is twist, and a real line has
     # a few dB of it, never twenty
     if not (1.0 / TWIST < cols[c] / rows[r] < TWIST):
-        return None
+        return None, stems
 
-    return KEYS[r][c]
+    return KEYS[r][c], stems
 
 
 # The bench calls process_block by name in detector's own namespace, so this is

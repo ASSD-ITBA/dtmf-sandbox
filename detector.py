@@ -12,6 +12,10 @@ name in it, once per block:
     buf_size  how long x is
     returns   one character, or None while there is nothing to hear
 
+The app draws the Goertzel values behind that answer if they come back with
+it, as `return c, rows + cols` — four rows then four columns, as powers.
+Either shape is accepted, here and there.
+
 Delete process_block and Run says so: it is the only name the app looks for.
 
 Five names are the app's, not the code's. They are bound before the module
@@ -109,8 +113,14 @@ def blocks(x, fs=FS, buf_size=BLOCK):
         b = x[s:s + buf_size]
         if len(b) < buf_size:
             b = np.concatenate((b, np.zeros(buf_size - len(b))))
-        v = process_block(b, float(fs), buf_size)
-        yield '' if v is None else str(v)
+        yield _char(process_block(b, float(fs), buf_size))
+
+
+def _char(v):
+    """The answer, whether or not the Goertzel values came back with it."""
+    if isinstance(v, (tuple, list)):
+        v = v[0]
+    return '' if v is None else str(v)
 
 
 def gate(chars, stable=STABLE):

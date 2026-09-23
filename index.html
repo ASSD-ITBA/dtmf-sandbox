@@ -6,15 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DTMF sandbox</title>
 
-  <link rel="icon" type="image/svg+xml" href="assets/acorn.svg?v=5">
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/acorn-32.png?v=5">
-  <link rel="icon" type="image/png" sizes="64x64" href="assets/acorn-64.png?v=5">
-  <link rel="apple-touch-icon" href="assets/acorn-64.png?v=5">
+  <link rel="icon" type="image/svg+xml" href="assets/acorn.svg?v=7">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/acorn-32.png?v=7">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/acorn-64.png?v=7">
+  <link rel="apple-touch-icon" href="assets/acorn-64.png?v=7">
 
   <!-- CodeMirror 5 and material-darker, vendored -->
   <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
   <link rel="stylesheet" href="vendor/codemirror/material-darker.css">
-  <link rel="stylesheet" href="css/styles.css?v=5">
+  <link rel="stylesheet" href="css/styles.css?v=7">
 </head>
 
 <body>
@@ -61,14 +61,47 @@
       </div>
     </section>
 
-    <!-- ══════════════════ THE KEYPAD ══════════════════
-         The pad, the number it has dialled, and the two things a real line
-         varies. Nothing around it: the keys are the instrument. -->
+    <!-- ══════════════════ THE LINE ══════════════════
+         Where the samples come from: the pad, which generates them, or the
+         microphone, which does not. Then the number that has been dialled,
+         and the things a real line varies. -->
     <aside id="pad-col">
       <section class="panel" id="pad-panel">
 
         <div class="panel-head">
-          <h2>The keypad</h2>
+          <h2>The line</h2>
+          <div class="panel-actions">
+            <button type="button" class="btn ghost tiny" id="btn-spectrum"
+                    aria-expanded="false" aria-controls="spectrum-block"
+                    title="The block as a spectrum, and the eight values your function returned">Spectrum &#9662;</button>
+            <div class="seg-switch" id="source-switch" role="group"
+                 aria-label="Where the samples come from">
+              <button type="button" class="seg on" id="src-pad" aria-pressed="true"
+                      title="The app generates the line from the keys">Keypad</button>
+              <button type="button" class="seg" id="src-mic" aria-pressed="false"
+                      title="Decode whatever the microphone hears">Mic</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- The FFT the app takes of the block, and under it, on the same
+             x axis, the Goertzel values process_block handed back for that
+             same block. Both scales are fixed: see js/spectrum.js. -->
+        <div class="spectrum" id="spectrum-block" hidden>
+          <div class="plot">
+            <div class="plot-head">
+              <span class="plot-name">FFT</span>
+              <span class="plot-note" id="fft-note">&mdash;</span>
+            </div>
+            <canvas id="fft-canvas"></canvas>
+          </div>
+          <div class="plot">
+            <div class="plot-head">
+              <span class="plot-name">Goertzel</span>
+              <span class="plot-note" id="stem-note">&mdash;</span>
+            </div>
+            <canvas id="stem-canvas"></canvas>
+          </div>
         </div>
 
         <div class="dialled">
@@ -78,6 +111,14 @@
 
         <div class="note" id="block-readout">not decoding</div>
 
+        <!-- what the microphone is handing over, after the gain: the level the
+             thresholds in the code are being compared against -->
+        <div class="mic-strip" id="mic-strip" hidden>
+          <span class="mic-label">In</span>
+          <div class="meter" id="mic-meter"><span class="meter-fill" id="mic-fill"></span></div>
+          <span class="mic-read" id="mic-read">&mdash;</span>
+        </div>
+
         <div class="well">
           <div id="keypad"></div>
         </div>
@@ -85,16 +126,23 @@
         <div class="note" id="key-readout">&mdash;</div>
 
         <div class="plate">
-          <label class="slider-row">
+          <label class="slider-row" id="row-noise">
             <span class="slider-label">Noise</span>
             <input type="range" id="noise" min="0" max="0.3" step="0.005" value="0">
             <span class="slider-value" id="noise-value">0.000</span>
           </label>
 
-          <label class="slider-row">
+          <label class="slider-row" id="row-twist">
             <span class="slider-label">Twist</span>
             <input type="range" id="twist" min="-12" max="12" step="0.5" value="0">
             <span class="slider-value" id="twist-value">0.0 dB</span>
+          </label>
+
+          <label class="slider-row off" id="row-gain"
+                 title="Trim on the way in: a microphone across a room is a long way down from the level the keypad sends at">
+            <span class="slider-label">Gain</span>
+            <input type="range" id="mic-gain" min="0" max="30" step="1" value="0" disabled>
+            <span class="slider-value" id="mic-gain-value">0 dB</span>
           </label>
 
           <div class="plate-foot">
@@ -132,14 +180,17 @@
   </script>
 
   <!-- App -->
-  <script src="js/dtmf.js?v=5"></script>
+  <script src="js/dtmf.js?v=7"></script>
+  <script src="js/fft.js?v=7"></script>
+  <script src="js/spectrum.js?v=7"></script>
   <!-- the worked detector; the page uses it only with ?solution=1 -->
-  <script src="js/solution.js?v=5"></script>
-  <script src="js/editor.js?v=5"></script>
-  <script src="js/pyrunner.js?v=5"></script>
-  <script src="js/audio.js?v=5"></script>
-  <script src="js/keypad.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/solution.js?v=7"></script>
+  <script src="js/editor.js?v=7"></script>
+  <script src="js/pyrunner.js?v=7"></script>
+  <script src="js/audio.js?v=7"></script>
+  <script src="js/mic.js?v=7"></script>
+  <script src="js/keypad.js?v=7"></script>
+  <script src="js/app.js?v=7"></script>
 </body>
 
 </html>

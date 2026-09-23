@@ -156,14 +156,17 @@ const PyRunner = (() => {
    *
    * The buffer is transferred, so pass a copy if you still need it.
    *
-   * @returns {Promise<{chars: string[], ms: number}>} one character per block,
-   *          '' where the detector returned None
+   * @returns {Promise<{chars, stems, stemsAt, ms}>} one character per block,
+   *          '' where the detector returned None; `stems` is the eight
+   *          Goertzel values from block `stemsAt` of this batch, or null if
+   *          the detector does not hand them back
    */
   function run(job, timeoutMs = 10000) {
     return request({
       type: 'run', fs: job.fs, bufSize: job.bufSize, data: job.data,
     }, timeoutMs, [job.data.buffer])
-      .then(m => ({ chars: m.chars, ms: m.ms }));
+      .then(m => ({ chars: m.chars, stems: m.stems || null,
+                    stemsAt: m.stemsAt, ms: m.ms }));
   }
 
   return {

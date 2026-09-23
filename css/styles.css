@@ -254,6 +254,36 @@ kbd {
 
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* ─────────── the source switch ─────────── */
+
+/* Two positions, one line: the samples are either generated here or heard
+   through the microphone, and which one it is has to be readable at a glance,
+   because every reading on the panel below means something different. */
+.seg-switch {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.seg {
+  font-family: inherit;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+
+.seg + .seg { border-left: 1px solid var(--border); }
+.seg:hover:not(:disabled):not(.on) { background: rgba(79, 195, 247, 0.08); color: var(--text); }
+.seg.on { color: #06121c; background: var(--accent); font-weight: 600; }
+.seg:disabled { opacity: 0.4; cursor: not-allowed; }
+.seg:focus-visible { outline: 2px solid var(--accent-dim); outline-offset: -2px; }
+
 /* ─────────── the parameter strip ─────────── */
 
 /* What the app owns, said once, above the code that is told the same thing. */
@@ -441,6 +471,126 @@ textarea.fallback {
   overflow-wrap: anywhere;
 }
 
+/* ── the spectrum, and what the detector made of it ── */
+
+/* Two plots, framed the same and gutter-aligned, so that a peak in the top
+   one sits directly above the stem that is supposed to be measuring it. The
+   alignment is in js/spectrum.js, which draws both with one geometry; all
+   this has to do is give them the same width. */
+.spectrum {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 12px 0;
+}
+
+.plot {
+  padding: 5px 6px 4px;
+  background: #080d16;
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+}
+
+.plot-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px 3px;
+}
+
+.plot-name {
+  flex: 0 0 auto;
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.plot-note {
+  flex: 1 1 auto;
+  font-family: var(--mono);
+  font-size: 9px;
+  text-align: right;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plot canvas { display: block; width: 100%; }
+#fft-canvas { height: 118px; }
+#stem-canvas { height: 134px; }
+
+#btn-spectrum.on { color: var(--accent); background: rgba(79, 195, 247, 0.1); }
+
+/* With the plots up the panel is the source switch, the plots and the keys,
+   and nothing else: the column has to fit without scrolling, and the keys
+   are the only part of the rest you play with while watching a spectrum. */
+#pad-panel.spectrum-open .dialled,
+#pad-panel.spectrum-open #block-readout,
+#pad-panel.spectrum-open #mic-strip,
+#pad-panel.spectrum-open #key-readout,
+#pad-panel.spectrum-open .plate { display: none; }
+
+#pad-panel.spectrum-open .well { margin-bottom: 12px; }
+
+/* ── what is coming in ── */
+
+.mic-strip {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: auto 1fr 58px;
+  align-items: center;
+  gap: 9px;
+  margin: 7px 12px 0;
+  padding: 6px 8px;
+  background: #080d16;
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+}
+
+.mic-label {
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.meter {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: #05080f;
+  border: 1px solid var(--border-soft);
+  overflow: hidden;
+}
+
+.meter-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(90deg, var(--ok), var(--accent) 65%, var(--out));
+  transition: width .07s linear;
+}
+
+/* full scale is not a target here, it is a fault: a clipped tone pair is two
+   tones plus everything their corners generate */
+.meter.clip { border-color: var(--err); }
+.meter.clip .meter-fill { background: var(--err); }
+
+.mic-read {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-align: right;
+  color: var(--text-dim);
+}
+
+.mic-read.clip { color: var(--err); }
+
 /* ── the pad ── */
 
 .well {
@@ -563,6 +713,10 @@ textarea.fallback {
   gap: 9px;
   margin-bottom: 7px;
 }
+
+/* a control the current line does not have: dimmed rather than taken away,
+   so the panel does not change shape when the source does */
+.slider-row.off { opacity: 0.4; }
 
 .slider-label {
   font-size: 9.5px;

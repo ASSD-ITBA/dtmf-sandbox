@@ -82,6 +82,37 @@ def _unit():
         raise NameError("nothing has been compiled yet")
     return _NS
 
+def _as_stems(v):
+    """The eight Goertzel values, in ROW_HZ then COL_HZ order, for the panel
+       to draw. Anything the code can iterate eight floats out of will do."""
+    if v is None:
+        return None
+    try:
+        vals = [float(x) for x in v]
+    except TypeError:
+        raise TypeError(
+            "the second thing process_block returned is a %s — it has to be "
+            "the eight Goertzel values, ROW_HZ then COL_HZ" % type(v).__name__)
+    if len(vals) != 8:
+        raise ValueError(
+            "process_block returned %d Goertzel values — it has to be eight, "
+            "ROW_HZ then COL_HZ" % len(vals))
+    return vals
+
+def _split(v):
+    """One block, one answer: a character on its own, or a character and the
+       values it was decided from."""
+    if isinstance(v, (tuple, list)):
+        if len(v) == 2:
+            return _as_char(v[0]), _as_stems(v[1])
+        if len(v) == 3:                      # (c, rows, cols), which is how a
+            rows = list(v[1]) + list(v[2])   # detector usually has them
+            return _as_char(v[0]), _as_stems(rows)
+        raise ValueError(
+            "process_block returned %d things — one character, or a character "
+            "and the eight Goertzel values" % len(v))
+    return _as_char(v), None
+
 def _as_char(v):
     """What a block is allowed to hand back: a character, or nothing."""
     if v is None:
@@ -106,6 +137,7 @@ def _run(data, fs, buf_size):
     arr = np.asarray(data, dtype=np.float64)
     n = len(arr)
     out = []
+    stems, stems_at, i = None, -1, 0
     for s in range(0, n, buf_size):
         x = arr[s:s + buf_size]
         # Every block is buf_size long. A frame is always a whole number of
@@ -113,8 +145,14 @@ def _run(data, fs, buf_size):
         # x[buf_size - 1] should never meet a short one.
         if len(x) < buf_size:
             x = np.concatenate((x, np.zeros(buf_size - len(x))))
-        out.append(_as_char(f(x, fs, buf_size)))
-    return out
+        c, vals = _split(f(x, fs, buf_size))
+        out.append(c)
+        # only the last block that gave any gets drawn: the plot shows one
+        # block, and which one it was has to be knowable
+        if vals is not None:
+            stems, stems_at = vals, i
+        i += 1
+    return out, stems, stems_at
 `;
 
 function post(msg, transfer) { self.postMessage(msg, transfer || []); }
@@ -190,8 +228,14 @@ function run(msg) {
   try {
     pyIn = pyodide.toPy(Array.from(data));
     res = harness.run(pyIn, fs, bufSize);
-    const chars = res.toJs ? res.toJs() : res;
-    post({ type: 'result', id, chars, ms: performance.now() - t });
+    const got = res.toJs ? res.toJs() : res;
+    post({
+      type: 'result', id,
+      chars: got[0],
+      stems: got[1] || null,          // Python None arrives as undefined
+      stemsAt: typeof got[2] === 'number' ? got[2] : -1,
+      ms: performance.now() - t,
+    });
   } catch (e) {
     post({ type: 'error', id, phase: 'run', message: cleanTrace(e) });
   } finally {

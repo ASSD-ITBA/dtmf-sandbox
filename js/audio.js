@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
    audio.js — the speaker end of the line
 
-   There is no capture here: the only signal in this app is the
-   one the keypad generates, so audio is a one-way street. The
-   engine hands over finished frames and this keeps the queue in
-   front of the sound card non-empty.
+   The engine hands over finished frames and this keeps the
+   queue in front of the sound card non-empty. Capture is the
+   other end and lives in mic.js, which borrows the resampler
+   below — the same one, run the other way round.
 
    Trimmed from the Audio FX sandbox, which shares the worklet.
    ═══════════════════════════════════════════════════════════ */
@@ -44,7 +44,12 @@ const AudioIO = (() => {
 
      Only used when the browser refuses to open a context at the engine's rate:
      8 kHz is a telephone rate, not a sound-card one, and playing the frames at
-     the card's rate instead would move every tone by the ratio between them. */
+     the card's rate instead would move every tone by the ratio between them.
+
+     `ratio` is input samples per output sample, so it is fs/rate going out to
+     the speaker and rate/fs coming in from the microphone. Interpolating is
+     enough on the way out — there is nothing above 4 kHz in what the keypad
+     generates — but on the way in there is, and mic.js filters before it. */
 
   function makeResampler(ratio) {
     let tail = new Float32Array(0);
@@ -244,5 +249,5 @@ const AudioIO = (() => {
     worklet: !!worklet,
   });
 
-  return { start, push, stop, isOn, stats };
+  return { start, push, stop, isOn, stats, makeResampler };
 })();
