@@ -99,7 +99,14 @@ const Editor = (() => {
     return STARTER;
   }
 
+  /* Not everything that lands in the editor is the user's to keep: the cheat
+     puts the worked detector in it, and a reload has to give them back what
+     they wrote. Every setSource says which kind it is, and nothing is
+     written while the answer is on screen. */
+  let persist = true;
+
   function save() {
+    if (!persist) return;
     try { localStorage.setItem(LS_KEY, getSource()); }
     catch { /* quota / private mode */ }
   }
@@ -157,7 +164,13 @@ const Editor = (() => {
 
   const getSource = () => (cm ? cm.getValue() : (ta ? ta.value : ''));
 
-  function setSource(text) {
+  /**
+   * @param {string} text
+   * @param {{persist?: boolean}} [opts]  persist: false for code that is not
+   *        the user's — it goes on screen and no further
+   */
+  function setSource(text, opts) {
+    persist = !(opts && opts.persist === false);
     if (cm) cm.setValue(text);
     else if (ta) ta.value = text;
     save();

@@ -621,6 +621,12 @@
   function boot() {
     setupControls();
     Editor.init({ onRun: () => { if (!S.running) run(); } });
+    Cheat.init({
+      onFire: () => log('sys', 'the worked detector is in the editor. ' +
+                               'Ctrl+Z puts yours back, and a reload undoes ' +
+                               'all of this — nothing of it was saved.'),
+      onUndo: () => log('sys', 'your code is back.'),
+    });
     Spectrum.init({
       onToggle: on => {
         const b = $('btn-spectrum');
@@ -634,13 +640,14 @@
       },
     });
     Keypad.init({
-      onPress: () => {
+      onPress: ch => {
         // a pointer or key event is a gesture, which is what an AudioContext
         // needs: this is the one place the speaker may be opened from
         if (!$('mute').checked) ensureAudio();
         ensurePump();
         feedbackHint();
         updateKey();
+        Cheat.press(ch);
       },
       onChange: updateKey,
     });

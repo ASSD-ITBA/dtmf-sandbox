@@ -97,7 +97,8 @@ body::before {
 .title-block .subtitle { margin: 1px 0 0; font-size: 11px; color: var(--text-faint); }
 
 .run-state,
-.py-badge {
+.py-badge,
+.cheat-badge {
   flex: 0 0 auto;
   white-space: nowrap;
   font-family: var(--mono);
@@ -119,6 +120,16 @@ body::before {
 .py-badge.ready { color: var(--ok); border-color: #2c5c3a; background: rgba(123, 216, 143, 0.08); }
 .py-badge.busy  { color: var(--out); border-color: #6b4d1f; background: rgba(255, 180, 84, 0.08); }
 .py-badge.err   { color: var(--err); border-color: #6b2b2b; background: rgba(255, 107, 107, 0.08); }
+
+/* Not shown until it is earned, and then not taken back: the page keeps it
+   lit until it is reloaded, which is the only way out of the cheat. */
+.cheat-badge {
+  color: #10060a;
+  background: var(--err);
+  border-color: var(--err);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
 
 kbd {
   font-family: var(--mono);
